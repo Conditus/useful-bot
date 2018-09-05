@@ -65,4 +65,5 @@ def processing():
 			elif (bot_request == "!ping" or bot_request == "!пинг"):							# pinging bot to test is it alive
 				request_params["message"] = "Pong!"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
+			# elif 
 	return "ok"
