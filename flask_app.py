@@ -49,8 +49,8 @@ def processing():
 				requests.get(api_request_string.format("messages.send"), params = request_params)
 			elif ("блять" in bot_request):																# checking spelling
 				request_params["message"] = "Вообще-то, правильно будет бляДь"
-			requests.get(api_request_string.format("messages.send"), params = request_params)
-		elif ("похуй" in bot_request):
-			request_params["message"] = "Мне тоже!"
-			requests.get(api_request_string.format("messages.send"), params = request_params)
+				requests.get(api_request_string.format("messages.send"), params = request_params)
+			elif ("похуй" in bot_request):
+				request_params["message"] = "Мне тоже!"
+				requests.get(api_request_string.format("messages.send"), params = request_params)
 	return "ok"
