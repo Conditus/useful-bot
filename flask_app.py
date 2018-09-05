@@ -57,7 +57,7 @@ def processing():
 				users = json.loads(requests.get(api_request_string.format("messages.getConversationMembers"), params = request_params).content)
 				users = users["response"]["profiles"]
 				for user in users:
-					mention_list.append(user["id({})".format(user["first_name"])])
+					mention_list.append("{}({})".format(user["id"],user["first_name"]))
 				request_params["message"] = ", @id".join(map(lambda id:str(id),mention_list))
 				request_params["message"] = "@id{}".format(request_params["message"])
 				requests.get(api_request_string.format("messages.send"), params = request_params)
