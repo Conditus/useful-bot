@@ -9,6 +9,13 @@ group_id = "170910335"
 
 app = Flask(__name__)
 
+commads_list = [
+		"!ping","!пинг",
+		"!everyone","!все",
+		"!getConv","!дай ид конфы",
+		"!","!",
+		]
+
 @app.route("/", methods=["POST"])
 def processing():
 	is_command = r"[!]\S*"
@@ -26,14 +33,21 @@ def processing():
 	elif (data["type"] == "message_new"):																		# if got a message - answer
 		bot_request = data["object"]["text"].lower()															# lowercasing message
 		request_params["peer_id"] = data["object"]["peer_id"]													# adding a dialog id to request dict
-		if (re.search(is_command, bot_request)[0] not in commads_list):											# finding a command in command list by RegExp
-			request_params["message"] = "Неизвестная команда!(Unknown command!)"
-			requests.get(api_request_string.format("messages.send"), params = request_params)
+		if (bot_request[0] != "!"):
+			if ("блять" in bot_request):																		# checking spelling
+				request_params["message"] = "Вообще-то, правильно будет бляДь"
+				requests.get(api_request_string.format("messages.send"), params = request_params)
+			elif ("похуй" in bot_request):
+				request_params["message"] = "Мне тоже!"
+				requests.get(api_request_string.format("messages.send"), params = request_params)
 		else:
-			if (bot_request == "!getconv" or bot_request == "!дай ид конфы"):							# asking bot about conversation id
+			if (re.search(is_command, bot_request)[0] not in commads_list):										# finding a command in command list by RegExp
+				request_params["message"] = "Неизвестная команда!(Unknown command!)"
+				requests.get(api_request_string.format("messages.send"), params = request_params)
+			elif (bot_request == "!getconv" or bot_request == "!дай ид конфы"):									# asking bot about conversation id
 				request_params["message"] = "Conversetion id is : {}".format(data["object"]["peer_id"])
 				requests.get(api_request_string.format("messages.send"), params = request_params)
-			elif (bot_request == "!everyone" or bot_request == "!все"):							# mentioning everyone at conversation
+			elif (bot_request == "!everyone" or bot_request == "!все"):											# mentioning everyone at conversation
 				mention_list = []
 				request_params["peer_id"] = data["object"]["peer_id"]
 				request_params["fields"] = "id, first_name"
@@ -46,11 +60,5 @@ def processing():
 				requests.get(api_request_string.format("messages.send"), params = request_params)
 			elif (bot_request == "!ping" or bot_request == "!пинг"):							# pinging bot to test is it alive
 				request_params["message"] = "Pong!"
-				requests.get(api_request_string.format("messages.send"), params = request_params)
-			elif ("блять" in bot_request):																# checking spelling
-				request_params["message"] = "Вообще-то, правильно будет бляДь"
-				requests.get(api_request_string.format("messages.send"), params = request_params)
-			elif ("похуй" in bot_request):
-				request_params["message"] = "Мне тоже!"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
 	return "ok"
