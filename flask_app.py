@@ -13,7 +13,7 @@ commads_list = [
 		"!ping","!пинг",
 		"!everyone","!все",
 		"!getConv","!дай ид конфы",
-		"!","!",
+		# "!","!",
 		]
 
 @app.route("/", methods=["POST"])
@@ -37,6 +37,7 @@ def processing():
 			if ("блять" in bot_request):																		# checking spelling
 				request_params["message"] = "Вообще-то, правильно будет бляДь"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
+
 			elif ("похуй" in bot_request):
 				request_params["message"] = "Мне тоже!"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
@@ -44,9 +45,11 @@ def processing():
 			if (re.search(is_command, bot_request)[0] not in commads_list):										# finding a command in command list by RegExp
 				request_params["message"] = "Неизвестная команда!(Unknown command!)"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
+
 			elif (bot_request == "!getconv" or bot_request == "!дай ид конфы"):									# asking bot about conversation id
 				request_params["message"] = "Conversetion id is : {}".format(data["object"]["peer_id"])
 				requests.get(api_request_string.format("messages.send"), params = request_params)
+
 			elif (bot_request == "!everyone" or bot_request == "!все"):											# mentioning everyone at conversation
 				mention_list = []
 				request_params["peer_id"] = data["object"]["peer_id"]
@@ -54,11 +57,13 @@ def processing():
 				users = json.loads(requests.get(api_request_string.format("messages.getConversationMembers"), params = request_params).content)
 				users = users["response"]["profiles"]
 				for user in users:
-					mention_list.append(user["id"])
+					mention_list.append("{}({})".format(user["id"],user["first_name"]))
 				request_params["message"] = ", @id".join(map(lambda id:str(id),mention_list))
 				request_params["message"] = "@id{}".format(request_params["message"])
 				requests.get(api_request_string.format("messages.send"), params = request_params)
+
 			elif (bot_request == "!ping" or bot_request == "!пинг"):							# pinging bot to test is it alive
 				request_params["message"] = "Pong!"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
+			# elif 
 	return "ok"
