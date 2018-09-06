@@ -1,5 +1,6 @@
-import requests
 from flask import Flask, json, request
+import pandas as pd
+import requests
 import re
 
 token = "9434682c67a5493b8f3aea4be18e961d456403bf57343f728ae13aa5348e28555a187c5d43e58a2afcd31"
@@ -13,8 +14,27 @@ commads_list = [
 		"!ping","!пинг",
 		"!everyone","!все",
 		"!getConv","!дай ид конфы",
-		"!","!",
+		# "!","!",
 		]
+
+path = "http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm"
+group = "w3205"
+
+weekdays = {
+	"пн" : "1day",
+	"вт" : "2day",
+	"ср" : "3day",
+	"чт" : "4day",
+	"пт" : "5day",
+	"сб" : "6day"
+}
+
+isWeekOdd = {
+	"чётная":False,
+	"нечётная":True,
+	"четная":False,
+	"нечетная":True
+}
 
 @app.route("/", methods=["POST"])
 def processing():
@@ -65,5 +85,33 @@ def processing():
 			elif (bot_request == "!ping" or bot_request == "!пинг"):							# pinging bot to test is it alive
 				request_params["message"] = "Pong!"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
-			# elif 
+
+			elif (bot_request == "!schedule" or bot_request == "!расписание"):
+				weekOdd = isWeekOdd["нечетная"]
+				day = "вт"
+				schedule = "\n"
+				subjectsList = []
+
+				r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group)).text
+				r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
+				tables = pd.read_html(r, attrs={"id": "{}".format(weekdays[day])})
+				for place, subj in zip(tables[0][1],tables[0][3]):
+					if type(place) != float:
+						subjectsList.append(place+"; "+subj)
+						# if ("ул.Ломоносова, д.9, лит. А" in place) :
+						# 	place = place.replace("ул.Ломоносова, д.9, лит. А","")
+						# if (weekOdd):
+						# 	if ("нечетная неделя" in place) :
+						# 		place = place.replace("нечетная неделя  ","")
+						# 	if ("нечетная неделя" in subj) :
+						# 		subj = subj.replace("нечетная неделя  ","")
+						# 	subjectsList.append(place+"; "+subj)
+						# else:
+						# 	if ("четная неделя" in place) :
+						# 		place = place.replace("четная неделя  ","")
+						# 	if ("четная неделя" in subj) :
+						# 		subj = subj.replace("четная неделя  ","")
+						# 	subjectsList.append(place+"; "+subj)
+				request_params["message"] = schedule.join(subjectsList)
+				requests.get(api_request_string.format("messages.send"), params = request_params)
 	return "ok"
