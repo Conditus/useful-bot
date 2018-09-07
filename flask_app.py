@@ -1,5 +1,6 @@
 from flask import Flask, json, request
 import pandas as pd
+import datetime
 import requests
 import re
 
@@ -14,19 +15,28 @@ commads_list = [
 		"!ping","!пинг",
 		"!everyone","!все",
 		"!getConv","!дай ид конфы",
-		# "!","!",
+		"!schedule","!расписание"
 		]
 
 path = "http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm"
 group = "w3205"
 
-weekdays = {
+weekdays_names = {
 	"пн" : "1day",
 	"вт" : "2day",
 	"ср" : "3day",
 	"чт" : "4day",
 	"пт" : "5day",
 	"сб" : "6day"
+}
+
+weekdays_numbers = {
+	"0" : "1day",
+	"1" : "2day",
+	"2" : "3day",
+	"3" : "4day",
+	"4" : "5day",
+	"5" : "6day"
 }
 
 isWeekOdd = {
@@ -36,6 +46,8 @@ isWeekOdd = {
 	"нечетная":True
 }
 
+weekday_template = r"пн|вт|ср|чт|пт|сб|вс"
+
 @app.route("/", methods=["POST"])
 def processing():
 	is_command = r"[!]\S*"
@@ -44,7 +56,7 @@ def processing():
 		"group_id":group_id,			# group id
 		"access_token":token,			# group access token
 		"v":api_version					# VK api version
-	}	
+	}
 	data = json.loads(request.data)																				# loading POST-data into json structure
 	if ("type" not in data):																					# if no from vk - return deny-string
 		return "not vk"
@@ -82,36 +94,53 @@ def processing():
 				request_params["message"] = "@id{}".format(request_params["message"])
 				requests.get(api_request_string.format("messages.send"), params = request_params)
 
-			elif (bot_request == "!ping" or bot_request == "!пинг"):							# pinging bot to test is it alive
+			elif (bot_request == "!ping" or bot_request == "!пинг"):											# pinging bot to test is it alive
 				request_params["message"] = "Pong!"
 				requests.get(api_request_string.format("messages.send"), params = request_params)
 
-			elif (bot_request == "!schedule" or bot_request == "!расписание"):
+			elif (re.search(is_command, bot_request)[0] == "!расписание"):
+				no_keywords_message = "Используй :\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]"
 				weekOdd = isWeekOdd["нечетная"]
-				day = "вт"
 				schedule = "\n"
 				subjectsList = []
-
-				r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group)).text
-				r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
-				tables = pd.read_html(r, attrs={"id": "{}".format(weekdays[day])})
-				for place, subj in zip(tables[0][1],tables[0][3]):
-					if type(place) != float:
-						subjectsList.append(place+"; "+subj)
-						# if ("ул.Ломоносова, д.9, лит. А" in place) :
-						# 	place = place.replace("ул.Ломоносова, д.9, лит. А","")
-						# if (weekOdd):
-						# 	if ("нечетная неделя" in place) :
-						# 		place = place.replace("нечетная неделя  ","")
-						# 	if ("нечетная неделя" in subj) :
-						# 		subj = subj.replace("нечетная неделя  ","")
-						# 	subjectsList.append(place+"; "+subj)
-						# else:
-						# 	if ("четная неделя" in place) :
-						# 		place = place.replace("четная неделя  ","")
-						# 	if ("четная неделя" in subj) :
-						# 		subj = subj.replace("четная неделя  ","")
-						# 	subjectsList.append(place+"; "+subj)
-				request_params["message"] = schedule.join(subjectsList)
-				requests.get(api_request_string.format("messages.send"), params = request_params)
+				try:
+					group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', bot_request, flags=re.IGNORECASE)[0].rstrip()
+				except TypeError:
+					pass
+				request_list = bot_request.split()
+				request_list.remove("!расписание")
+				if (len(request_list) == 0):
+					request_params["message"] = no_keywords_message
+				else:
+					request_list.remove(group)
+					if ("завтра" in request_list):
+						day = weekdays_numbers[str(datetime.datetime.today().weekday())]
+						request_list.remove("завтра")
+					else:
+						day = re.search(weekday_template, request_list[0])[0]
+					r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group.upper())).text
+					r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
+					try:
+						tables = pd.read_html(r, attrs={"id": "{}".format(weekdays_names[day])})
+						for place, subj in zip(tables[0][1],tables[0][3]):
+							if type(place) != float:
+								subjectsList.append(place+"; "+subj)
+							# if ("ул.Ломоносова, д.9, лит. А" in place) :
+							# 	place = place.replace("ул.Ломоносова, д.9, лит. А","")
+							# if (weekOdd):
+							# 	if ("нечетная неделя" in place) :
+							# 		place = place.replace("нечетная неделя  ","")
+							# 	if ("нечетная неделя" in subj) :
+							# 		subj = subj.replace("нечетная неделя  ","")
+							# 	subjectsList.append(place+"; "+subj)
+							# else:
+							# 	if ("четная неделя" in place) :
+							# 		place = place.replace("четная неделя  ","")
+							# 	if ("четная неделя" in subj) :
+							# 		subj = subj.replace("четная неделя  ","")
+							# 	subjectsList.append(place+"; "+subj)
+						request_params["message"] = "Расписание группы {} на {}: \n{}".format(group.upper(), day, schedule.join(subjectsList))
+					except ValueError:
+						request_params["message"] = "Расписание не найдено :("
+		requests.get(api_request_string.format("messages.send"), params = request_params)
 	return "ok"
