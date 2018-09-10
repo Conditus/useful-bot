@@ -1,3 +1,6 @@
+.gitignore
+startserver*
+.DS*
 _*_
 *.lock
 settings.py

@@ -17,7 +17,6 @@ app = Flask(__name__)
 @app.route("/", methods=["POST"])
 
 def processing():
-	return "ok"
 	data = json.loads(request.data)
 	if ("type" not in data):
 		return "not vk"
@@ -32,6 +31,7 @@ def processing():
 		else:
 			commands(bot_request, data)
 			requests.post(api_request_string.format("messages.send"), data = request_params)
+	return "ok"
 
 def commands(bot_request, response_data):
 	if (re.search(is_command, bot_request)[0] not in commads_list):
