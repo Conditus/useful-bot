@@ -1,0 +1,5 @@
+_*_
+*.lock
+settings.py
+*.sublime*
+startserver

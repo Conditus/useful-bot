@@ -1,0 +1,9 @@
+v0.0 : project has been initialised
+v0.1 : added !ping and !everyone commands
+v0.2 : added !распиание command 
+v0.25 : one main method was splitted into method,
+	corresponded with invocation commands; post requests now will be used
+	instead of get
+v0.3 : main server-variables has beed cut to separated file; try to 
+	push server to own host
+
