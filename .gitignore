@@ -1,8 +1,0 @@
-.gitignore
-.DS*
-_*_
-settings*
-Pip*
-*.sublime*
-startserver
-ngrok
