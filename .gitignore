@@ -1,8 +1,0 @@
-.gitignore
-startserver*
-.DS*
-_*_
-settings.py
-Pip*
-*.sublime*
-startserver
