@@ -19,7 +19,7 @@ bot_version = "0.3"
 group_id = "170910335"
 
 #----------------------------- Dicts with weekdays -----------------------------#
-weekdays_names = {
+weekdaysNames = {
 	"пн" : "1day",
 	"вт" : "2day",
 	"ср" : "3day",
@@ -29,7 +29,7 @@ weekdays_names = {
 	"вс" : "7day"
 }
 
-weekdays_numbers = {
+weekdaysNumbers = {
 	"0" : "1day",
 	"1" : "2day",
 	"2" : "3day",
@@ -51,24 +51,22 @@ isWeekOdd = {
 }
 
 #----------------------------- A list of usable commands -----------------------------#
-commads_list = [
+commandsList = [
 		"!ping","!пинг",
 		"!everyone","!все",
 		"!getConv","!дай ид конфы",
 		"!schedule","!расписание"
 		]
 
-weekday_template = r"пн|вт|ср|чт|пт|сб|вс"
-is_command = "[!]\\S*"
 api_request_string = "https://api.vk.com/method/{}"
 
-request_params = {
+requestParams = {
 		"group_id":group_id,
 		"access_token":token,
 		"v":api_version
 	}
 
-weekday_template = r"пн|вт|ср|чт|пт|сб|вс"
+weekdayTemplate = r"пн|вт|ср|чт|пт|сб|вс"
 isCommand = r"[!]\S*"
 
 app = Flask(__name__)
@@ -81,38 +79,38 @@ def processing():
 	if (data["type"] == "confirmation"):
 		return confirmation_token
 	elif (data["type"] == "message_new"):
-		bot_request = data["object"]["text"].lower()
-		request_params["peer_id"] = data["object"]["peer_id"]
-		if (bot_request[0] != "!"):
-			if(reactions(bot_request)):
-				requests.post(api_request_string.format("messages.send"), data = request_params)
+		botRequest = data["object"]["text"].lower()
+		requestParams["peer_id"] = data["object"]["peer_id"]
+		if (botRequest[0] != "!"):
+			if(reactions(botRequest)):
+				requests.post(api_request_string.format("messages.send"), data = requestParams)
 		else:
-			commands(bot_request, data)
-			requests.post(api_request_string.format("messages.send"), data = request_params)
+			commands(botRequest, data)
+			requests.post(api_request_string.format("messages.send"), data = requestParams)
 	return "ok"
 
-def commands(bot_request, response_data):
-	if (re.search(isCommand, bot_request)[0] not in commads_list):
+def commands(botRequest, responseData):
+	if (re.search(isCommand, botRequest)[0] not in commandsList):
 		request_params["message"] = "Неизвестная команда!(Unknown command!)"
 
-	elif (bot_request == "!getconv" or bot_request == "!дай ид конфы"):
+	elif (botRequest == "!getconv" or botRequest == "!дай ид конфы"):
 		request_params["message"] = "Conversetion id is : {}".format(response_data["object"]["peer_id"])
 
-	elif (bot_request == "!everyone" or bot_request == "!все"):
+	elif (botRequest == "!everyone" or botRequest == "!все"):
 		mention(response_data)
 
-	elif (bot_request == "!ping" or bot_request == "!пинг"):
+	elif (botRequest == "!ping" or botRequest == "!пинг"):
 		request_params["message"] = "Pong!"
 
-	elif (re.search(isCommand, bot_request)[0] == "!расписание"):
-		schedule(bot_request, response_data)
+	elif (re.search(isCommand, botRequest)[0] == "!расписание"):
+		schedule(botRequest, response_data)
 
-def reactions(bot_request):
+def reactions(botRequest):
 	isReaction = False
-	if ("блять" in bot_request):
+	if ("блять" in botRequest):
 		request_params["message"] = "Вообще-то, правильно будет бляДь"
 		isReaction = True
-	elif ("похуй" in bot_request):
+	elif ("похуй" in botRequest):
 		request_params["message"] = "Мне тоже!"
 		isReaction = True
 	return isReaction
@@ -128,17 +126,17 @@ def mention(response_data):
 	request_params["message"] = ", @id".join(map(lambda id:str(id),mention_list))
 	request_params["message"] = "@id{}".format(request_params["message"])
 
-def schedule(bot_request, response_data):
+def schedule(botRequest, response_data):
 	no_keywords_message = "Используй :\n!расписание <группа> <Пн/Вт/Ср/Чт/Пт/Сб>"
 	# no_keywords_message = "Используй :\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]"
 	weekOdd = isWeekOdd["нечетная"]
 	schedule = "\n"
 	subjectsList = []
 	try:
-		group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', bot_request, flags=re.IGNORECASE)[0].rstrip()
+		group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', botRequest, flags=re.IGNORECASE)[0].rstrip()
 	except TypeError:
 		pass
-	request_list = bot_request.split()
+	request_list = botRequest.split()
 	request_list.remove("!расписание")
 	if (len(request_list) == 0):
 		request_params["message"] = no_keywords_message

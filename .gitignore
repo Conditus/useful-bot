@@ -1,8 +1,8 @@
 .gitignore
-startserver*
 .DS*
 _*_
-settings.py
+settings*
 Pip*
 *.sublime*
 startserver
+ngrok
