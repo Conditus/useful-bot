@@ -4,14 +4,72 @@ import pandas
 import datetime
 import requests
 import regex as re
-from settings import *
-from settings import is_command
+
+# This is a server settings file
+
+#------------------------------ An group-access token -----------------------------#
+token = "d72481f00c65b68013d31f43a9cc4a7d8496ac4b7fd6ae2749e69b3fe5a8f575ce38cbaac8d9c4b55c81a"
+#----------------------------- A token to confirm that server works normally -----------------------------#
+confirmation_token = "45a1b7c1"
+#----------------------------- Version of VKApi -----------------------------#
+api_version = "5.84"
+#----------------------------- Bot version -----------------------------#
+bot_version = "0.3"
+#----------------------------- The id of group -----------------------------#
+group_id = "170910335"
+
+#----------------------------- Dicts with weekdays -----------------------------#
+weekdays_names = {
+	"пн" : "1day",
+	"вт" : "2day",
+	"ср" : "3day",
+	"чт" : "4day",
+	"пт" : "5day",
+	"сб" : "6day",
+	"вс" : "7day"
+}
+
+weekdays_numbers = {
+	"0" : "1day",
+	"1" : "2day",
+	"2" : "3day",
+	"3" : "4day",
+	"4" : "5day",
+	"5" : "6day"
+}
+
+#----------------------------- Boolean week -----------------------------#g
+isWeekOdd = {
+	"чётная":False,
+	"нечётная":True,
+	"четная":False,
+	"нечетная":True,
+	"чёт":False,
+	"нечёт":True,
+	"чет":False,
+	"нечет":True
+}
+
+#----------------------------- A list of usable commands -----------------------------#
+commads_list = [
+		"!ping","!пинг",
+		"!everyone","!все",
+		"!getConv","!дай ид конфы",
+		"!schedule","!расписание"
+		]
+
+weekday_template = r"пн|вт|ср|чт|пт|сб|вс"
+is_command = "[!]\\S*"
+api_request_string = "https://api.vk.com/method/{}"
 
 request_params = {
 		"group_id":group_id,
 		"access_token":token,
 		"v":api_version
 	}
+
+weekday_template = r"пн|вт|ср|чт|пт|сб|вс"
+isCommand = r"[!]\S*"
 
 app = Flask(__name__)
 @app.route("/", methods=["POST"])
@@ -34,7 +92,7 @@ def processing():
 	return "ok"
 
 def commands(bot_request, response_data):
-	if (re.search(is_command, bot_request)[0] not in commads_list):
+	if (re.search(isCommand, bot_request)[0] not in commads_list):
 		request_params["message"] = "Неизвестная команда!(Unknown command!)"
 
 	elif (bot_request == "!getconv" or bot_request == "!дай ид конфы"):
@@ -46,7 +104,7 @@ def commands(bot_request, response_data):
 	elif (bot_request == "!ping" or bot_request == "!пинг"):
 		request_params["message"] = "Pong!"
 
-	elif (re.search(is_command, bot_request)[0] == "!расписание"):
+	elif (re.search(isCommand, bot_request)[0] == "!расписание"):
 		schedule(bot_request, response_data)
 
 def reactions(bot_request):

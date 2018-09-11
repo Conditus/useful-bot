@@ -2,7 +2,7 @@
 startserver*
 .DS*
 _*_
-*.lock
 settings.py
+Pip*
 *.sublime*
 startserver
