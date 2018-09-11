@@ -1,0 +1,401 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"is",
+				"isReaction"
+			],
+			[
+				"respo",
+				"response_data"
+			],
+			[
+				"req",
+				"request_params"
+			],
+			[
+				"rq",
+				"request_params"
+			],
+			[
+				"res",
+				"response_data"
+			],
+			[
+				"messa",
+				"message"
+			],
+			[
+				"reque",
+				"request_params"
+			],
+			[
+				"requ",
+				"request_list"
+			],
+			[
+				"gro",
+				"group_index"
+			],
+			[
+				"week",
+				"weekday_template"
+			],
+			[
+				"ruq",
+				"request_params"
+			],
+			[
+				"no",
+				"no_keywords_message"
+			],
+			[
+				"reu",
+				"request"
+			],
+			[
+				"bto",
+				"bot_request"
+			],
+			[
+				"wee",
+				"weekdays"
+			],
+			[
+				"for",
+				"format"
+			],
+			[
+				"comma",
+				"commads_list"
+			],
+			[
+				"bot",
+				"bot_request"
+			],
+			[
+				"mes",
+				"message"
+			],
+			[
+				"para",
+				"request_params"
+			],
+			[
+				"re",
+				"request_params"
+			],
+			[
+				"me",
+				"message"
+			],
+			[
+				"api",
+				"api_request_string"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "#!/usr/bin/env python\nfrom flask import Flask, json, request\nimport pandas\nimport datetime\nimport requests\nimport regex as re\n\n# This is a server settings file\n\n#------------------------------ An group-access token -----------------------------#\ntoken = \"d72481f00c65b68013d31f43a9cc4a7d8496ac4b7fd6ae2749e69b3fe5a8f575ce38cbaac8d9c4b55c81a\"\n#----------------------------- A token to confirm that server works normally -----------------------------#\nconfirmationToken = \"45a1b7c1\"\n#----------------------------- Version of VKApi -----------------------------#\napiVersion = \"5.84\"\n#----------------------------- Bot version -----------------------------#\nbotVersion = \"0.3\"\n#----------------------------- The id of group -----------------------------#\ngroupId = \"170910335\"\n\n#----------------------------- Dicts with weekdays -----------------------------#\nweekdaysNames = {\n\t\"пн\" : \"1day\",\n\t\"вт\" : \"2day\",\n\t\"ср\" : \"3day\",\n\t\"чт\" : \"4day\",\n\t\"пт\" : \"5day\",\n\t\"сб\" : \"6day\",\n\t\"вс\" : \"7day\"\n}\n\nweekdaysNumbers = {\n\t\"0\" : \"1day\",\n\t\"1\" : \"2day\",\n\t\"2\" : \"3day\",\n\t\"3\" : \"4day\",\n\t\"4\" : \"5day\",\n\t\"5\" : \"6day\"\n}\n\n#----------------------------- Boolean week -----------------------------#g\nisWeekOdd = {\n\t\"чётная\":False,\n\t\"нечётная\":True,\n\t\"четная\":False,\n\t\"нечетная\":True,\n\t\"чёт\":False,\n\t\"нечёт\":True,\n\t\"чет\":False,\n\t\"нечет\":True\n}\n\n#----------------------------- A list of usable commands -----------------------------#\ncommandsList = [\n\t\t\"!ping\",\"!пинг\",\n\t\t\"!everyone\",\"!все\",\n\t\t\"!getConv\",\"!дай ид конфы\",\n\t\t\"!schedule\",\"!расписание\"\n\t\t]\n\napiRequestString = \"https://api.vk.com/method/{}\"\n\nrequestParams = {\n\t\t\"group_id\":group_id,\n\t\t\"access_token\":token,\n\t\t\"v\":api_version\n\t}\n\nweekdayTemplate = r\"пн|вт|ср|чт|пт|сб|вс\"\nisCommand = r\"[!]\\S*\"\n\napp = Flask(__name__)\n@app.route(\"/\", methods=[\"POST\"])\n\ndef processing():\n\tdata = json.loads(request.data)\n\tif (\"type\" not in data):\n\t\treturn \"not vk\"\n\tif (data[\"type\"] == \"confirmation\"):\n\t\treturn confirmationToken\n\telif (data[\"type\"] == \"message_new\"):\n\t\tbotRequest = data[\"object\"][\"text\"].lower()\n\t\trequestParams[\"peer_id\"] = data[\"object\"][\"peer_id\"]\n\t\tif (botRequest[0] != \"!\"):\n\t\t\tif(reactions(botRequest)):\n\t\t\t\trequests.post(apiRequestString.format(\"messages.send\"), data = requestParams)\n\t\telse:\n\t\t\tcommands(botRequest, data)\n\t\t\trequests.post(apiRequestString.format(\"messages.send\"), data = requestParams)\n\treturn \"ok\"\n\ndef commands(botRequest, responseData):\n\tif (re.search(isCommand, botRequest)[0] not in commandsList):\n\t\trequestParams[\"message\"] = \"Неизвестная команда!(Unknown command!)\"\n\n\telif (botRequest == \"!getconv\" or botRequest == \"!дай ид конфы\"):\n\t\trequestParams[\"message\"] = \"Conversetion id is : {}\".format(responseData[\"object\"][\"peer_id\"])\n\n\telif (botRequest == \"!everyone\" or botRequest == \"!все\"):\n\t\tmention(responseData)\n\n\telif (botRequest == \"!ping\" or botRequest == \"!пинг\"):\n\t\trequestParams[\"message\"] = \"Pong!\"\n\n\telif (re.search(isCommand, botRequest)[0] == \"!расписание\"):\n\t\tschedule(botRequest, responseData)\n\ndef reactions(botRequest):\n\tisReaction = False\n\tif (\"блять\" in botRequest):\n\t\trequestParams[\"message\"] = \"Вообще-то, правильно будет бляДь\"\n\t\tisReaction = True\n\telif (\"похуй\" in botRequest):\n\t\trequestParams[\"message\"] = \"Мне тоже!\"\n\t\tisReaction = True\n\treturn isReaction\n\ndef mention(responseData):\n\tmention_list = []\n\trequestParams[\"peer_id\"] = responseData[\"object\"][\"peer_id\"]\n\trequestParams[\"fields\"] = \"id, first_name\"\n\tusers = json.loads(requests.get(apiRequestString.format(\"messages.getConversationMembers\"), params = requestParams).content)\n\tusers = users[\"response\"][\"profiles\"]\n\tfor user in users:\n\t\tmention_list.append(\"{}({})\".format(user[\"id\"],user[\"first_name\"]))\n\trequestParams[\"message\"] = \", @id\".join(map(lambda id:str(id),mention_list))\n\trequestParams[\"message\"] = \"@id{}\".format(requestParams[\"message\"])\n\ndef schedule(botRequest, responseData):\n\tno_keywords_message = \"Используй :\\n!расписание <группа> <Пн/Вт/Ср/Чт/Пт/Сб>\"\n\t# no_keywords_message = \"Используй :\\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]\"\n\tweekOdd = isWeekOdd[\"нечетная\"]\n\tschedule = \"\\n\"\n\tsubjectsList = []\n\ttry:\n\t\tgroup = re.search(r'[ABKOPXUVMNCTWLYZ]\\d{4}\\D?', botRequest, flags=re.IGNORECASE)[0].rstrip()\n\texcept TypeError:\n\t\tpass\n\trequest_list = botRequest.split()\n\trequest_list.remove(\"!расписание\")\n\tif (len(request_list) == 0):\n\t\trequestParams[\"message\"] = no_keywords_message\n\telse:\n\t\trequest_list.remove(group)\n\t\tif (\"завтра\" in request_list):\n\t\t\tday = weekdays_numbers[str(datetime.datetime.today().weekday())]\n\t\t\trequest_list.remove(\"завтра\")\n\t\telse:\n\t\t\tday = re.search(weekday_template, request_list[0])[0]\n\t\tr = requests.get(\"http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm\".format(group.upper())).text\n\t\tr = '<tbody><tr><th class=\"today day\">'.join(r.split('<tbody><th class=\"today day\">'))\n\t\tr = '<tbody><tr><th class=\"day\">'.join(r.split('<tbody><th class=\"day\">'))\n\t\ttry:\n\t\t\ttables = pandas.read_html(r, attrs={\"id\": \"{}\".format(weekdays_names[day])})\n\t\t\tfor place, subj in zip(tables[0][1],tables[0][3]):\n\t\t\t\tif type(place) != float:\n\t\t\t\t\tsubjectsList.append(\"⚠\"+str(place)+\"; \"+str(subj))\n\t\t\trequestParams[\"message\"] = \"Расписание группы {} на {}: \\n{}\".format(group.upper(), day, schedule.join(subjectsList))\n\t\texcept ValueError:\n\t\t\trequestParams[\"message\"] = \"Расписание не найдено 😓\"\n\n",
+			"file": "flask_app.py",
+			"file_size": 5743,
+			"file_write_time": 131811568890371685,
+			"settings":
+			{
+				"buffer_size": 5334,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "settings.json",
+			"settings":
+			{
+				"buffer_size": 633,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"Math",
+				"Material Theme: Activate theme"
+			],
+			[
+				"packae control ins",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 136.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '6f4c264a24d933ce70df5dedcf1dcaee' + 'ebe013ee18cced0ef93d5f746d80ef60'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/veritaris/Documents/Projects/VKBot"
+	],
+	"file_history":
+	[
+		"/Users/veritaris/Documents/Projects/VKBot/settings.py",
+		"/Users/veritaris/Documents/Projects/VKBot/.gitignore",
+		"/Users/veritaris/Documents/Projects/herokutest/python-getting-started/manage.py",
+		"/Users/veritaris/Documents/Projects/herokutest/python-getting-started/app.json",
+		"/Users/veritaris/Documents/Projects/herokutest/python-getting-started/Pipfile.lock",
+		"/Users/veritaris/Documents/Projects/herokutest/python-getting-started/Procfile",
+		"/Users/veritaris/Documents/Projects/herokutest/python-getting-started/Procfile.windows",
+		"/Users/veritaris/Documents/Projects/herokutest/python-getting-started/README.md",
+		"/Users/veritaris/Documents/Projects/VKBot/untitled2.html",
+		"/Users/veritaris/Documents/Projects/VKBot/sc.html",
+		"/Users/veritaris/Documents/Projects/VKBot/untitled1.html",
+		"/Users/veritaris/Documents/Projects/VKBot/untitled.py",
+		"/Users/veritaris/Documents/Projects/VKBot/main.py",
+		"/Users/veritaris/Library/Application Support/Sublime Text 3/Packages/User/Python3.sublime-build"
+	],
+	"find":
+	{
+		"height": 70.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"response_data",
+			"request_params",
+			"api_request",
+			"bot_request",
+			"=",
+			"settings.",
+			"path",
+			"pd",
+			"<tbody><tr><th class=\"3day\">",
+			"<tbody><th class=\"3day\">",
+			"<tbody><th class=\"day\">",
+			"<tbody><th class=\"day\">'",
+			".lower()",
+			"lower()"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "flask_app.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5334,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2701,
+								2701
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1001.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "settings.json",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 633,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								143,
+								143
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 26.0
+	},
+	"input":
+	{
+		"height": 66.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 174.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/User/Python3.sublime-build",
+	"project": "VKBot.sublime-project",
+	"replace":
+	{
+		"height": 48.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"untitled"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

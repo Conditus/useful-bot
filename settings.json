@@ -1,0 +1,34 @@
+{
+	"serverInfo" : {
+		"accessToken" : "d72481f00c65b68013d31f43a9cc4a7d8496ac4b7fd6ae2749e69b3fe5a8f575ce38cbaac8d9c4b55c81a",
+		"confirmationToken" : "45a1b7c1",
+		"apiVersion" : "5.84",
+		"botVersion" : "0.3",
+		"groupId" : "170910335"
+	},
+	"weeksData" : {
+		"weekdaysNames" : {
+		"пн" : "1day",
+		"вт" : "2day",
+		"ср" : "3day",
+		"чт" : "4day",
+		"пт" : "5day",
+		"сб" : "6day",
+		"вс" : "7day"
+		},
+		"weekdaysNumbers" : {
+			"0" : "1day",
+			"1" : "2day",
+			"2" : "3day",
+			"3" : "4day",
+			"4" : "5day",
+			"5" : "6day"
+		},
+	},
+	"templates" : {
+		"weekdayTemplate" : "пн|вт|ср|чт|пт|сб|вс",
+		"isCommand" : "[!]\\S*"
+	}
+
+
+}
