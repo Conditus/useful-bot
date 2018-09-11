@@ -146,7 +146,7 @@ def schedule(botRequest, responseData):
     else:
         requestList.remove(group)
         if ("завтра" in requestList):
-            day = weekdays_numbers[str(datetime.datetime.today().weekday())]
+            day = weekdaysNumbers[str(datetime.datetime.today().weekday())]
             requestList.remove("завтра")
         else:
             day = re.search(weekdayTemplate, requestList[0])[0]
