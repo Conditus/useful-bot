@@ -61,9 +61,9 @@ commandsList = [
 apiRequestString = "https://api.vk.com/method/{}"
 
 requestParams = {
-        "group_id":group_id,
+        "group_id":groupId,
         "access_token":token,
-        "v":api_version
+        "v":apiVersion
     }
 
 weekdayTemplate = r"пн|вт|ср|чт|пт|сб|вс"
