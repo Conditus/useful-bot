@@ -45,8 +45,10 @@ def processing():
 
     if ("type" not in serverData):
         return "not vk"
+
     if (requestData["type"] == "confirmation"):
         return serverInfo["confirmationToken"]
+        
     elif (requestData["type"] == "message_new"):
         botRequest = requestData["object"]["text"].lower()
         requestParams["peer_id"] = requestData["object"]["peer_id"]
