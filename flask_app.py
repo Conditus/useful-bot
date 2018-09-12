@@ -169,7 +169,7 @@ def schedule(botRequest, responseData, serverData):
     schedule = "\n"
     subjectsList = []
     try:
-        group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', botRequest, flags=re.IGNORECASE)[0].rstrip()
+        group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', botRequest, flags = re.IGNORECASE)[0].rstrip()
     except TypeError:
         try:
             conversationID = responseData["object"]["peer_id"]
@@ -193,8 +193,8 @@ def schedule(botRequest, responseData, serverData):
         r = '<tbody><tr><th class="today day">'.join(r.split('<tbody><th class="today day">'))
         r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
         try:
-            tables = pandas.read_html(r, attrs={"id": "{}".format(weekdaysNames[day])})
-            for place, subj in zip(tables[0][1],tables[0][3]):
+            tables = pandas.read_html(r, attrs = {"id": "{}".format(weekdaysNames[day])})
+            for place, subj in zip(tables[0][1], tables[0][3]):
                 if type(place) != float:
                     subjectsList.append("⚠"+str(place)+"; "+str(subj))
             requestParams["message"] = "Расписание группы {} на {}: \n{}".format(group.upper(), day, schedule.join(subjectsList))
