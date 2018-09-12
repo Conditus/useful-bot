@@ -18,9 +18,6 @@ commandsList = [
 
 apiRequestString = "https://api.vk.com/method/{}"
 
-weekdayTemplate = "пн|вт|ср|чт|пт|сб|вс"
-isCommand = "[!]\\S*"
-
 with open("settings.json", "r") as SD:
         serverData = json.load(SD)  
 serverInfo = serverData["serverInfo"]
@@ -48,7 +45,7 @@ def processing():
 
     if (requestData["type"] == "confirmation"):
         return serverInfo["confirmationToken"]
-        
+
     elif (requestData["type"] == "message_new"):
         botRequest = requestData["object"]["text"].lower()
         requestParams["peer_id"] = requestData["object"]["peer_id"]
@@ -61,7 +58,7 @@ def processing():
     return "ok"
 
 def commands(botRequest, responseData, serverData):
-    if (re.search(isCommand, botRequest)[0] not in commandsList):
+    if (re.search(serverData["templates"]["isCommand"], botRequest)[0] not in commandsList):
         requestParams["message"] = "Неизвестная команда!(Unknown command!)"
 
     elif (botRequest == "!getconv" or botRequest == "!дай ид конфы"):
@@ -73,10 +70,10 @@ def commands(botRequest, responseData, serverData):
     elif (botRequest == "!ping" or botRequest == "!пинг"):
         requestParams["message"] = "Pong!"
 
-    elif (re.search(isCommand, botRequest)[0] == "!расписание"):
+    elif (re.search(serverData["templates"]["isCommand"], botRequest)[0] == "!расписание"):
         schedule(botRequest, responseData, serverData)
 
-    elif (re.search(isCommand, botRequest)[0] == "!настройка"):
+    elif (re.search(serverData["templates"]["isCommand"], botRequest)[0] == "!настройка"):
         changeSettings(botRequest, responseData, serverData)
 
 def reactions(botRequest, reactions):
@@ -151,15 +148,15 @@ def schedule(botRequest, responseData, serverData):
     else:
         requestList.remove(group)
         if ("завтра" in requestList):
-            day = weekdaysNumbers[str(datetime.datetime.today().weekday())]
+            day = serverData["weeksData"]["weekdaysNumvers"][str(datetime.datetime.today().weekday())]
             requestList.remove("завтра")
         else:
-            day = re.search(weekdayTemplate, requestList[0])[0]
+            day = re.search(serverData["templates"]["weekdayTemplate"], requestList[0])[0]
         r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group.upper())).text
         r = '<tbody><tr><th class="today day">'.join(r.split('<tbody><th class="today day">'))
         r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
         try:
-            tables = pandas.read_html(r, attrs = {"id": "{}".format(weekdaysNames[day])})
+            tables = pandas.read_html(r, attrs = {"id": "{}".format(serverData["weeksData"]["weekdaysNames"][day])})
             for place, subj in zip(tables[0][1], tables[0][3]):
                 if type(place) != float:
                     subjectsList.append("⚠"+str(place)+"; "+str(subj))
