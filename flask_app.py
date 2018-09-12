@@ -1,12 +1,14 @@
+# coding: utf-8
 #!/usr/bin/env python
 from flask import Flask, json, request
 import pandas
 import datetime
 import requests
 import regex as re
+# import json
+import codecs
 
 # This is a server settings file
-
 #------------------------------ An group-access token -----------------------------#
 token = "d72481f00c65b68013d31f43a9cc4a7d8496ac4b7fd6ae2749e69b3fe5a8f575ce38cbaac8d9c4b55c81a"
 #----------------------------- A token to confirm that server works normally -----------------------------#
@@ -16,7 +18,7 @@ apiVersion = "5.84"
 #----------------------------- Bot version -----------------------------#
 botVersion = "0.3"
 #----------------------------- The id of group -----------------------------#
-groupId = "170910335"
+groupID = "170910335"
 
 #----------------------------- Dicts with weekdays -----------------------------#
 weekdaysNames = {
@@ -54,42 +56,51 @@ isWeekOdd = {
 commandsList = [
         "!ping","!пинг",
         "!everyone","!все",
-        "!getConv","!дай ид конфы",
+        "!getconv","!дай ид конфы",
         "!schedule","!расписание"
-        ]
+        "!setdefault","!настройка"
+]
 
 apiRequestString = "https://api.vk.com/method/{}"
 
-requestParams = {
-        "group_id":groupId,
-        "access_token":token,
-        "v":apiVersion
-    }
+weekdayTemplate = "пн|вт|ср|чт|пт|сб|вс"
+isCommand = "[!]\\S*"
 
-weekdayTemplate = r"пн|вт|ср|чт|пт|сб|вс"
-isCommand = r"[!]\S*"
-
-app = Flask(__name__)
-@app.route("/", methods=["POST"])
+# app = Flask(__name__)
+# @app.route("/", methods=["POST"])
 
 def processing():
-    data = json.loads(request.data)
+    requestData = json.loads(request.data)
+
+# ---------------------------------- Initialising server data every time when message got ------------------------------
+    with open("settings.json", "r") as SD:
+        serverData = json.load(SD)  
+    serverInfo = serverData["serverInfo"]
+    weeksData = serverData["weeksData"]
+    templates = serverData["templates"]
+    reactions = serverData["reactions"]
+    convsWithGroups = serverData["convsWithGroups"]
+    requestParams = {
+            "group_id":serverInfo["groupID"],
+            "access_token":serverInfo["accessToken"],
+            "v":serverInfo["apiVersion"]
+    }
     if ("type" not in data):
         return "not vk"
-    if (data["type"] == "confirmation"):
+    if (requestData["type"] == "confirmation"):
         return confirmationToken
-    elif (data["type"] == "message_new"):
-        botRequest = data["object"]["text"].lower()
-        requestParams["peer_id"] = data["object"]["peer_id"]
+    elif (requestData["type"] == "message_new"):
+        botRequest = requestData["object"]["text"].lower()
+        requestParams["peer_id"] = requestData["object"]["peer_id"]
         if (botRequest[0] != "!"):
-            if(reactions(botRequest)):
+            if(reactions(botRequest, reactions)):
                 requests.post(apiRequestString.format("messages.send"), data = requestParams)
         else:
-            commands(botRequest, data)
+            commands(botRequest, requestData, serverData)
             requests.post(apiRequestString.format("messages.send"), data = requestParams)
     return "ok"
 
-def commands(botRequest, responseData):
+def commands(botRequest, responseData, serverData):
     if (re.search(isCommand, botRequest)[0] not in commandsList):
         requestParams["message"] = "Неизвестная команда!(Unknown command!)"
 
@@ -103,9 +114,12 @@ def commands(botRequest, responseData):
         requestParams["message"] = "Pong!"
 
     elif (re.search(isCommand, botRequest)[0] == "!расписание"):
-        schedule(botRequest, responseData)
+        schedule(botRequest, responseData, serverData)
 
-def reactions(botRequest):
+    elif (re.search(isCommand, botRequest)[0] == "!настройка"):
+        changeSettings(botRequest, responseData, serverData)
+
+def reactions(botRequest, reactions):
     isReaction = False
     if ("блять" in botRequest):
         requestParams["message"] = "Вообще-то, правильно будет бляДь"
@@ -118,19 +132,38 @@ def reactions(botRequest):
         isReaction = True
     return isReaction
 
+def changeSettings(botRequest, responseData, serverData):
+    noKeywordsMessage = "Используй: \n!настройка <[команда для настройки] либо [список]> <параметры настройки>"
+    scheduleSettingsMessage = """Настройка для команды !расписание: \n!настройка !расписание <группа> - 
+    сохранить для <группа> для текущей беседы"""
+    everyoneSettingsMessage = """Настройка для команды !все: \n!настройка !все кроме : <список Имя Фамилия через 
+    запятую>"""
+    requestList = botRequest.split()
+    requestList.remove("!настройка")
+    if (len(requestList) == 0):
+        requestParams["message"] = noKeywordsMessage
+    else:
+        if ("!расписание " in requestParams):
+            requestList.remove("!расписание")
+            group = str(requestList[0])
+            if (group not in list(serverData["convsWithGroups"].keys())):
+                conversationID = responseData["object"]["peer_id"]
+                serverData["convsWithGroups"]["{}".format(conversationID)] = str(group.upper())
+
 def mention(responseData):
     mention_list = []
     requestParams["peer_id"] = responseData["object"]["peer_id"]
     requestParams["fields"] = "id, first_name"
-    users = json.loads(requests.get(apiRequestString.format("messages.getConversationMembers"), params = requestParams).content)
+    users = json.loads(requests.get(apiRequestString.format("messages.getConversationMembers"), 
+            params = requestParams).content)
     users = users["response"]["profiles"]
     for user in users:
         mention_list.append("{}({})".format(user["id"],user["first_name"]))
     requestParams["message"] = ", @id".join(map(lambda id:str(id),mention_list))
     requestParams["message"] = "@id{}".format(requestParams["message"])
 
-def schedule(botRequest, responseData):
-    no_keywords_message = "Используй :\n!расписание <группа> <Пн/Вт/Ср/Чт/Пт/Сб>"
+def schedule(botRequest, responseData, serverData):
+    noKeywordsMessage = "Используй:\n!расписание <группа> <Пн/Вт/Ср/Чт/Пт/Сб>"
     # no_keywords_message = "Используй :\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]"
     weekOdd = isWeekOdd["нечетная"]
     schedule = "\n"
@@ -138,11 +171,17 @@ def schedule(botRequest, responseData):
     try:
         group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', botRequest, flags=re.IGNORECASE)[0].rstrip()
     except TypeError:
-        pass
+        try:
+            conversationID = responseData["object"]["peer_id"]
+            if (conversationID in list(serverData["convsWithGroups"].keys())):
+                group = serverData["convsWithGroups"]["{}".format(conversationID)]
+        except TypeError:
+            pass
+
     requestList = botRequest.split()
     requestList.remove("!расписание")
     if (len(requestList) == 0):
-        requestParams["message"] = no_keywords_message
+        requestParams["message"] = noKeywordsMessage
     else:
         requestList.remove(group)
         if ("завтра" in requestList):
