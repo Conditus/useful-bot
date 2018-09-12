@@ -5,52 +5,7 @@ import pandas
 import datetime
 import requests
 import regex as re
-# import json
-import codecs
 
-# This is a server settings file
-#------------------------------ An group-access token -----------------------------#
-token = "d72481f00c65b68013d31f43a9cc4a7d8496ac4b7fd6ae2749e69b3fe5a8f575ce38cbaac8d9c4b55c81a"
-#----------------------------- A token to confirm that server works normally -----------------------------#
-confirmationToken = "45a1b7c1"
-#----------------------------- Version of VKApi -----------------------------#
-apiVersion = "5.84"
-#----------------------------- Bot version -----------------------------#
-botVersion = "0.3"
-#----------------------------- The id of group -----------------------------#
-groupID = "170910335"
-
-#----------------------------- Dicts with weekdays -----------------------------#
-weekdaysNames = {
-    "пн" : "1day",
-    "вт" : "2day",
-    "ср" : "3day",
-    "чт" : "4day",
-    "пт" : "5day",
-    "сб" : "6day",
-    "вс" : "7day"
-}
-
-weekdaysNumbers = {
-    "0" : "1day",
-    "1" : "2day",
-    "2" : "3day",
-    "3" : "4day",
-    "4" : "5day",
-    "5" : "6day"
-}
-
-#----------------------------- Boolean week -----------------------------#g
-isWeekOdd = {
-    "чётная":False,
-    "нечётная":True,
-    "четная":False,
-    "нечетная":True,
-    "чёт":False,
-    "нечёт":True,
-    "чет":False,
-    "нечет":True
-}
 
 #----------------------------- A list of usable commands -----------------------------#
 commandsList = [
@@ -66,8 +21,18 @@ apiRequestString = "https://api.vk.com/method/{}"
 weekdayTemplate = "пн|вт|ср|чт|пт|сб|вс"
 isCommand = "[!]\\S*"
 
-# app = Flask(__name__)
-# @app.route("/", methods=["POST"])
+with open("settings.json", "r") as SD:
+        serverData = json.load(SD)  
+serverInfo = serverData["serverInfo"]
+reactions = serverData["reactions"]
+requestParams = {
+        "group_id":serverInfo["groupID"],
+        "access_token":serverInfo["accessToken"],
+        "v":serverInfo["apiVersion"]
+}
+
+app = Flask(__name__)
+@app.route("/", methods=["POST"])
 
 def processing():
     requestData = json.loads(request.data)
@@ -76,16 +41,9 @@ def processing():
     with open("settings.json", "r") as SD:
         serverData = json.load(SD)  
     serverInfo = serverData["serverInfo"]
-    weeksData = serverData["weeksData"]
-    templates = serverData["templates"]
     reactions = serverData["reactions"]
-    convsWithGroups = serverData["convsWithGroups"]
-    requestParams = {
-            "group_id":serverInfo["groupID"],
-            "access_token":serverInfo["accessToken"],
-            "v":serverInfo["apiVersion"]
-    }
-    if ("type" not in data):
+
+    if ("type" not in serverData):
         return "not vk"
     if (requestData["type"] == "confirmation"):
         return confirmationToken
@@ -133,7 +91,7 @@ def reactions(botRequest, reactions):
     return isReaction
 
 def changeSettings(botRequest, responseData, serverData):
-    noKeywordsMessage = "Используй: \n!настройка <[команда для настройки] либо [список]> <параметры настройки>"
+    noKeywordsMessage = "Используй: \n!настройка <[команда для настройки] либо ['список']> <параметры настройки>"
     scheduleSettingsMessage = """Настройка для команды !расписание: \n!настройка !расписание <группа> - 
     сохранить для <группа> для текущей беседы"""
     everyoneSettingsMessage = """Настройка для команды !все: \n!настройка !все кроме : <список Имя Фамилия через 
@@ -142,6 +100,12 @@ def changeSettings(botRequest, responseData, serverData):
     requestList.remove("!настройка")
     if (len(requestList) == 0):
         requestParams["message"] = noKeywordsMessage
+    elif (botRequest == "!настройка список"):
+        requestParams["message"] = "{} \n{}".format(scheduleSettingsMessage, everyoneSettingsMessage)
+    elif (botRequest == "!настройка !расписание"):
+        requestParams["message"] = scheduleSettingsMessage
+    elif (botRequest == "!настройка !все"):
+        requestParams["message"] = everyoneSettingsMessage
     else:
         if ("!расписание " in requestParams):
             requestList.remove("!расписание")
