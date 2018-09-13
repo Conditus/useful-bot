@@ -7,6 +7,14 @@ import requests
 import regex as re
 
 
+
+##  ##        ####         ####   #####   ##
+##  ##       ##  ##       #   ##  ##      ##  
+##  ##       ##  ##         ###   #####   #####
+ ####        ##  ##       #   ##      ##  ##  ##
+  ##          ####   ##    ####   #####   #####
+
+
 #----------------------------- A list of usable commands -----------------------------#
 commandsList = [
         "!ping","!пинг",
@@ -43,18 +51,19 @@ def processing():
     if ("type" not in requestData):
         return "not vk"
 
-    if (requestData["type"] == "confirmation"):
+    elif (requestData["type"] == "confirmation"):
         return serverInfo["confirmationToken"]
 
     elif (requestData["type"] == "message_new"):
-        botRequest = requestData["object"]["text"].lower()
-        requestParams["peer_id"] = requestData["object"]["peer_id"]
-        if (botRequest[0] != "!"):
-            if(reactions(botRequest, reactions)):
+        if (requestData["object"]["text"] != ""):
+            botRequest = requestData["object"]["text"].lower()
+            requestParams["peer_id"] = requestData["object"]["peer_id"]
+            if (botRequest[0] != "!"):
+                if(reactions(botRequest, reactions)):
+                    requests.post(apiRequestString.format("messages.send"), data = requestParams)
+            else:
+                commands(botRequest, requestData, serverData)
                 requests.post(apiRequestString.format("messages.send"), data = requestParams)
-        else:
-            commands(botRequest, requestData, serverData)
-            requests.post(apiRequestString.format("messages.send"), data = requestParams)
     return "ok"
 
 def commands(botRequest, responseData, serverData):
@@ -151,10 +160,10 @@ def schedule(botRequest, responseData, serverData):
     else:
         requestList.remove(group)
         if ("завтра" in requestList):
-            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
+            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() + 1)]
             requestList.remove("завтра")
         elif ("сегодня" in requestList):
-            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() - 1)]
+            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
             requestList.remove("сегодня")
         else:
             day = re.search(serverData["templates"]["weekdayTemplate"], requestList[0])[0]
