@@ -12,16 +12,16 @@ commandsList = [
         "!ping","!пинг",
         "!everyone","!все",
         "!getconv","!дай ид конфы",
-        "!schedule","!расписание"
+        "!schedule","!расписание",
         "!setdefault","!настройка"
 ]
 
 apiRequestString = "https://api.vk.com/method/{}"
 
-with open("settings.json", "r") as SD:
-        serverData = json.load(SD)  
+with open("/home/Veritaris/mysite/settings.json", "r") as SD:
+        serverData = json.load(SD)
 serverInfo = serverData["serverInfo"]
-reactions = serverData["reactions"]
+reactionsList = serverData["reactionsList"]
 requestParams = {
         "group_id":serverInfo["groupID"],
         "access_token":serverInfo["accessToken"],
@@ -35,12 +35,12 @@ def processing():
     requestData = json.loads(request.data)
 
 # ---------------------------------- Initialising server data every time when message got ------------------------------
-    with open("settings.json", "r") as SD:
-        serverData = json.load(SD)  
+    with open("/home/Veritaris/mysite/settings.json", "r") as SD:
+        serverData = json.load(SD)
     serverInfo = serverData["serverInfo"]
-    reactions = serverData["reactions"]
+    reactionsList = serverData["reactionsList"]
 
-    if ("type" not in serverData):
+    if ("type" not in requestData):
         return "not vk"
 
     if (requestData["type"] == "confirmation"):
@@ -91,9 +91,9 @@ def reactions(botRequest, reactions):
 
 def changeSettings(botRequest, responseData, serverData):
     noKeywordsMessage = "Используй: \n!настройка <[команда для настройки] либо ['список']> <параметры настройки>"
-    scheduleSettingsMessage = """Настройка для команды !расписание: \n!настройка !расписание <группа> - 
-    сохранить для <группа> для текущей беседы"""
-    everyoneSettingsMessage = """Настройка для команды !все: \n!настройка !все кроме : <список Имя Фамилия через 
+    scheduleSettingsMessage = """🔧Настройка для команды !расписание: \n!настройка !расписание <группа> -
+    сохранить <группа> для текущей беседы"""
+    everyoneSettingsMessage = """🔧Настройка для команды !все: \n!настройка !все кроме : <список Имя Фамилия через
     запятую>"""
     requestList = botRequest.split()
     requestList.remove("!настройка")
@@ -106,18 +106,22 @@ def changeSettings(botRequest, responseData, serverData):
     elif (botRequest == "!настройка !все"):
         requestParams["message"] = everyoneSettingsMessage
     else:
-        if ("!расписание " in requestParams):
+        if ("!расписание" in requestList):
             requestList.remove("!расписание")
             group = str(requestList[0])
             if (group not in list(serverData["convsWithGroups"].keys())):
                 conversationID = responseData["object"]["peer_id"]
                 serverData["convsWithGroups"]["{}".format(conversationID)] = str(group.upper())
+                with open("/home/Veritaris/mysite/settings.json", "w") as SD:
+                    json.dump(serverData, SD)
+                requestParams["message"] = "Настройка успешно сохранена!\nТеперь можно использовать \"!расписание <день>\""
+
 
 def mention(responseData):
     mention_list = []
     requestParams["peer_id"] = responseData["object"]["peer_id"]
     requestParams["fields"] = "id, first_name"
-    users = json.loads(requests.get(apiRequestString.format("messages.getConversationMembers"), 
+    users = json.loads(requests.get(apiRequestString.format("messages.getConversationMembers"),
             params = requestParams).content)
     users = users["response"]["profiles"]
     for user in users:
@@ -128,28 +132,30 @@ def mention(responseData):
 def schedule(botRequest, responseData, serverData):
     noKeywordsMessage = "Используй:\n!расписание <группа> <Пн/Вт/Ср/Чт/Пт/Сб>"
     # no_keywords_message = "Используй :\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]"
-    weekOdd = isWeekOdd["нечетная"]
     schedule = "\n"
     subjectsList = []
+    requestList = botRequest.split()
+    requestList.remove("!расписание")
     try:
         group = re.search(r'[ABKOPXUVMNCTWLYZ]\d{4}\D?', botRequest, flags = re.IGNORECASE)[0].rstrip()
     except TypeError:
         try:
-            conversationID = responseData["object"]["peer_id"]
+            conversationID = str(responseData["object"]["peer_id"])
             if (conversationID in list(serverData["convsWithGroups"].keys())):
                 group = serverData["convsWithGroups"]["{}".format(conversationID)]
+                requestList.append(group)
         except TypeError:
             pass
-
-    requestList = botRequest.split()
-    requestList.remove("!расписание")
     if (len(requestList) == 0):
         requestParams["message"] = noKeywordsMessage
     else:
         requestList.remove(group)
         if ("завтра" in requestList):
-            day = serverData["weeksData"]["weekdaysNumvers"][str(datetime.datetime.today().weekday())]
+            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
             requestList.remove("завтра")
+        elif ("сегодня" in requestList):
+            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() - 1)]
+            requestList.remove("сегодня")
         else:
             day = re.search(serverData["templates"]["weekdayTemplate"], requestList[0])[0]
         r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group.upper())).text
