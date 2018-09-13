@@ -116,15 +116,14 @@ def changeSettings(botRequest, responseData, serverData):
         requestParams["message"] = everyoneSettingsMessage
     else:
         if ("!расписание" in requestList):
-             with open("/home/Veritaris/mysite/groups.json", "r") as GD:
+            with open("/home/Veritaris/mysite/groups.json", "r") as GD:
                 convsWithGroups = json.load(GD)
             requestList.remove("!расписание")
             group = str(requestList[0])
             if (group not in list(convsWithGroups.keys())):
                 conversationID = responseData["object"]["peer_id"]
                 convsWithGroups["{}".format(conversationID)] = str(group.upper())
-
-                with open("/home/Veritaris/mysite/groups.json", "r") as GD:
+                with open("/home/Veritaris/mysite/groups.json", "w") as GD:
                     json.dump(serverData, GD)
                 with open("/home/Veritaris/mysite/settings.json", "w") as SD:
                     json.dump(serverData, SD)
