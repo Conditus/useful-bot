@@ -116,11 +116,16 @@ def changeSettings(botRequest, responseData, serverData):
         requestParams["message"] = everyoneSettingsMessage
     else:
         if ("!расписание" in requestList):
+             with open("/home/Veritaris/mysite/groups.json", "r") as GD:
+                convsWithGroups = json.load(GD)
             requestList.remove("!расписание")
             group = str(requestList[0])
-            if (group not in list(serverData["convsWithGroups"].keys())):
+            if (group not in list(convsWithGroups.keys())):
                 conversationID = responseData["object"]["peer_id"]
-                serverData["convsWithGroups"]["{}".format(conversationID)] = str(group.upper())
+                convsWithGroups["{}".format(conversationID)] = str(group.upper())
+
+                with open("/home/Veritaris/mysite/groups.json", "r") as GD:
+                    json.dump(serverData, GD)
                 with open("/home/Veritaris/mysite/settings.json", "w") as SD:
                     json.dump(serverData, SD)
                 requestParams["message"] = "Настройка успешно сохранена!\nТеперь можно использовать \"!расписание <день>\""
@@ -143,6 +148,8 @@ def schedule(botRequest, responseData, serverData):
     # no_keywords_message = "Используй :\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]"
     schedule = "\n"
     subjectsList = []
+    with open("/home/Veritaris/mysite/groups.json", "r") as GD:
+        convsWithGroups = json.load(GD)
     requestList = botRequest.split()
     requestList.remove("!расписание")
     try:
@@ -150,11 +157,11 @@ def schedule(botRequest, responseData, serverData):
     except TypeError:
         try:
             conversationID = str(responseData["object"]["peer_id"])
-            if (conversationID in list(serverData["convsWithGroups"].keys())):
-                group = serverData["convsWithGroups"]["{}".format(conversationID)]
+            if (conversationID in list(convsWithGroups.keys())):
+                group = convsWithGroups["{}".format(conversationID)]
                 requestList.append(group)
         except TypeError:
-            pass
+            requestParams["message"] = "Группа"
     if (len(requestList) == 0):
         requestParams["message"] = noKeywordsMessage
     else:
