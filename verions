@@ -6,4 +6,4 @@ v0.25 : one main method was splitted into method,
 	instead of get
 v0.3 : main server-variables has beed cut to separated file; try to 
 	push server to own host
-
+v0.4 : added groups and voting 

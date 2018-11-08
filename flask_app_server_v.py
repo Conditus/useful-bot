@@ -8,11 +8,13 @@ import regex as re
 
 
 
-##  ##        ####         ####   #####   ##
-##  ##       ##  ##       #   ##  ##      ##  
-##  ##       ##  ##         ###   #####   #####
- ####        ##  ##       #   ##      ##  ##  ##
-  ##          ####   ##    ####   #####   #####
+
+
+##  ##     ####      ##      ####
+##  ##    ##  ##     ##  ## ##
+##  ##    ##  ##     ######  ####
+ ####     ##  ##         ##     ##
+  ##       ####  ##      ##  ####
 
 
 #----------------------------- A list of usable commands -----------------------------#
@@ -20,7 +22,7 @@ commandsList = [
         "!ping","!пинг",
         "!everyone","!все",
         "!getconv","!дай ид конфы",
-        "!schedule","!расписание",
+        "!schedule","!расписание", 
         "!setdefault","!настройка"
 ]
 
@@ -87,9 +89,6 @@ def commands(botRequest, responseData, serverData):
 
 def reactions(botRequest, reactions):
     isReaction = False
-    if ("блять" in botRequest):
-        requestParams["message"] = "Вообще-то, правильно будет бляДь"
-        isReaction = True
     if ("похуй" in botRequest):
         requestParams["message"] = "Мне тоже!"
         isReaction = True
@@ -124,9 +123,7 @@ def changeSettings(botRequest, responseData, serverData):
                 conversationID = responseData["object"]["peer_id"]
                 convsWithGroups["{}".format(conversationID)] = str(group.upper())
                 with open("/home/Veritaris/mysite/groups.json", "w") as GD:
-                    json.dump(serverData, GD)
-                with open("/home/Veritaris/mysite/settings.json", "w") as SD:
-                    json.dump(serverData, SD)
+                    json.dump(convsWithGroups, GD)
                 requestParams["message"] = "Настройка успешно сохранена!\nТеперь можно использовать \"!расписание <день>\""
 
 
@@ -136,6 +133,9 @@ def mention(responseData):
     requestParams["fields"] = "id, first_name"
     users = json.loads(requests.get(apiRequestString.format("messages.getConversationMembers"),
             params = requestParams).content)
+    with open("/home/Veritaris/mysite/log.txt", "w") as f:
+        f.write(requests.get(apiRequestString.format("messages.getConversationMembers"),
+            params = requestParams).content.decode())
     users = users["response"]["profiles"]
     for user in users:
         mention_list.append("{}({})".format(user["id"],user["first_name"]))
@@ -164,24 +164,26 @@ def schedule(botRequest, responseData, serverData):
     if (len(requestList) == 0):
         requestParams["message"] = noKeywordsMessage
     else:
-        requestList.remove(group)
-        if ("завтра" in requestList):
-            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() + 1)]
-            requestList.remove("завтра")
-        elif ("сегодня" in requestList):
-            day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
-            requestList.remove("сегодня")
-        else:
-            day = re.search(serverData["templates"]["weekdayTemplate"], requestList[0])[0]
-        r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group.upper())).text
-        r = '<tbody><tr><th class="today day">'.join(r.split('<tbody><th class="today day">'))
-        r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
         try:
-            tables = pandas.read_html(r, attrs = {"id": "{}".format(serverData["weeksData"]["weekdaysNames"][day])})
-            for place, subj in zip(tables[0][1], tables[0][3]):
-                if type(place) != float:
-                    subjectsList.append("⚠"+str(place)+"; "+str(subj))
-            requestParams["message"] = "Расписание группы {} на {}: \n{}".format(group.upper(), day, schedule.join(subjectsList))
-        except ValueError:
-            requestParams["message"] = "Расписание не найдено 😓"
-
+            requestList.remove(group)
+            if ("завтра" in requestList):
+                day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() + 1)]
+                requestList.remove("завтра")
+            elif ("сегодня" in requestList):
+                day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
+                requestList.remove("сегодня")
+            else:
+                day = re.search(serverData["templates"]["weekdayTemplate"], requestList[0])[0]
+            r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group.upper())).text
+            r = '<tbody><tr><th class="today day">'.join(r.split('<tbody><th class="today day">'))
+            r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
+            try:
+                tables = pandas.read_html(r, attrs = {"id": "{}".format(serverData["weeksData"]["weekdaysNames"][day])})
+                for place, subj in zip(tables[0][1], tables[0][3]):
+                    if type(place) != float:
+                        subjectsList.append("⚠"+str(place)+"; "+str(subj))
+                requestParams["message"] = "Расписание группы {} на {}: \n{}".format(group.upper(), day, schedule.join(subjectsList))
+            except ValueError:
+                requestParams["message"] = "Расписание не найдено 😓"
+        except UnboundLocalError:
+            pass
