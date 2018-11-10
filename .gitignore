@@ -3,3 +3,8 @@ settings*
 *.sublime*
 *local*
 .gitignore
+*untitled*
+*rsa*
+*key*
+ngrok
+*pyc*

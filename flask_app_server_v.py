@@ -8,8 +8,6 @@ import regex as re
 
 
 
-
-
 ##  ##     ####      ##      ####
 ##  ##    ##  ##     ##  ## ##
 ##  ##    ##  ##     ######  ####
@@ -54,7 +52,7 @@ def processing():
         return "not vk"
 
     elif (requestData["type"] == "confirmation"):
-        return serverInfo["confirmationToken"]
+        return serverInfo["confirmationToken"] 
 
     elif (requestData["type"] == "message_new"):
         if (requestData["object"]["text"] != ""):
