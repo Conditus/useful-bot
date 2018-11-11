@@ -26,10 +26,10 @@ commandsList = [
 
 apiRequestString = "https://api.vk.com/method/{}"
 
-with open("/home/Veritaris/mysite/settings.json", "r") as SD:
-        serverData = json.load(SD)
-serverInfo = serverData["serverInfo"]
-reactionsList = serverData["reactionsList"]
+with open("/home/Veritaris/mysite/serverSettings.json", "r") as serverSettingsFile:
+    serverSettings = json.load(serverSettingsFile)  
+serverInfo = serverSettings["serverInfo"]
+reactionsList = serverSettings["reactionsList"]
 requestParams = {
         "group_id":serverInfo["groupID"],
         "access_token":serverInfo["accessToken"],
@@ -43,10 +43,10 @@ def processing():
     requestData = json.loads(request.data)
 
 # ---------------------------------- Initialising server data every time when message got ------------------------------
-    with open("/home/Veritaris/mysite/settings.json", "r") as SD:
-        serverData = json.load(SD)
-    serverInfo = serverData["serverInfo"]
-    reactionsList = serverData["reactionsList"]
+    with open("/home/Veritaris/mysite/serverSettings.json", "r") as serverSettingsFile:
+        serverSettings = json.load(serverSettingsFile)
+    serverInfo = serverSettings["serverInfo"]
+    reactionsList = serverSettings["reactionsList"]
 
     if ("type" not in requestData):
         return "not vk"
@@ -62,12 +62,12 @@ def processing():
                 if(reactions(botRequest, reactions)):
                     requests.post(apiRequestString.format("messages.send"), data = requestParams)
             else:
-                commands(botRequest, requestData, serverData)
+                commands(botRequest, requestData, serverSettings)
                 requests.post(apiRequestString.format("messages.send"), data = requestParams)
     return "ok"
 
-def commands(botRequest, responseData, serverData):
-    if (re.search(serverData["templates"]["isCommand"], botRequest)[0] not in commandsList):
+def commands(botRequest, responseData, serverSettings):
+    if (re.search(serverSettings["templates"]["isCommand"], botRequest)[0] not in commandsList):
         requestParams["message"] = "Неизвестная команда!(Unknown command!)"
 
     elif (botRequest == "!getconv" or botRequest == "!дай ид конфы"):
@@ -79,11 +79,11 @@ def commands(botRequest, responseData, serverData):
     elif (botRequest == "!ping" or botRequest == "!пинг"):
         requestParams["message"] = "Pong!"
 
-    elif (re.search(serverData["templates"]["isCommand"], botRequest)[0] == "!расписание"):
-        schedule(botRequest, responseData, serverData)
+    elif (re.search(serverSettings["templates"]["isCommand"], botRequest)[0] == "!расписание"):
+        schedule(botRequest, responseData, serverSettings)
 
-    elif (re.search(serverData["templates"]["isCommand"], botRequest)[0] == "!настройка"):
-        changeSettings(botRequest, responseData, serverData)
+    elif (re.search(serverSettings["templates"]["isCommand"], botRequest)[0] == "!настройка"):
+        changeSettings(botRequest, responseData, serverSettings)
 
 def reactions(botRequest, reactions):
     isReaction = False
@@ -95,7 +95,7 @@ def reactions(botRequest, reactions):
         isReaction = True
     return isReaction
 
-def changeSettings(botRequest, responseData, serverData):
+def changeSettings(botRequest, responseData, serverSettings):
     noKeywordsMessage = "Используй: \n!настройка <[команда для настройки] либо ['список']> <параметры настройки>"
     scheduleSettingsMessage = """🔧Настройка для команды !расписание: \n!настройка !расписание <группа> -
     сохранить <группа> для текущей беседы"""
@@ -113,8 +113,8 @@ def changeSettings(botRequest, responseData, serverData):
         requestParams["message"] = everyoneSettingsMessage
     else:
         if ("!расписание" in requestList):
-            with open("/home/Veritaris/mysite/groups.json", "r") as GD:
-                convsWithGroups = json.load(GD)
+            with open("/home/Veritaris/mysite/convGroups.json", "r") as convGroupsFile:
+                convGroups = json.load(GD)
             requestList.remove("!расписание")
             group = str(requestList[0])
             if (group not in list(convsWithGroups.keys())):
@@ -140,7 +140,7 @@ def mention(responseData):
     requestParams["message"] = ", @id".join(map(lambda id:str(id),mention_list))
     requestParams["message"] = "@id{}".format(requestParams["message"])
 
-def schedule(botRequest, responseData, serverData):
+def schedule(botRequest, responseData, serverSettings):
     noKeywordsMessage = "Используй:\n!расписание <группа> <Пн/Вт/Ср/Чт/Пт/Сб>"
     # no_keywords_message = "Используй :\n!расписание <группа> [завтра] [чётный/нечётный/четный/нечетный] [Пн/Вт/Ср/Чт/Пт/Сб] [дд.мм.гггг]"
     schedule = "\n"
@@ -165,18 +165,18 @@ def schedule(botRequest, responseData, serverData):
         try:
             requestList.remove(group)
             if ("завтра" in requestList):
-                day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() + 1)]
+                day = serverSettings["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday() + 1)]
                 requestList.remove("завтра")
             elif ("сегодня" in requestList):
-                day = serverData["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
+                day = serverSettings["weeksData"]["weekdaysNumbers"][str(datetime.datetime.today().weekday())]
                 requestList.remove("сегодня")
             else:
-                day = re.search(serverData["templates"]["weekdayTemplate"], requestList[0])[0]
+                day = re.search(serverSettings["templates"]["weekdayTemplate"], requestList[0])[0]
             r = requests.get("http://www.ifmo.ru/ru/schedule/0/{}/schedule.htm".format(group.upper())).text
             r = '<tbody><tr><th class="today day">'.join(r.split('<tbody><th class="today day">'))
             r = '<tbody><tr><th class="day">'.join(r.split('<tbody><th class="day">'))
             try:
-                tables = pandas.read_html(r, attrs = {"id": "{}".format(serverData["weeksData"]["weekdaysNames"][day])})
+                tables = pandas.read_html(r, attrs = {"id": "{}".format(serverSettings["weeksData"]["weekdaysNames"][day])})
                 for place, subj in zip(tables[0][1], tables[0][3]):
                     if type(place) != float:
                         subjectsList.append("⚠"+str(place)+"; "+str(subj))
