@@ -1,9 +1,0 @@
-_*_
-settings*
-*.sublime*
-*local*
-.gitignore
-*untitled*
-ngrok
-*pyc*
-*encrypted*
